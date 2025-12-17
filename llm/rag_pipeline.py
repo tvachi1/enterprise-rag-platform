@@ -2,6 +2,8 @@
 RAG Pipeline
 End-to-end retrieval-augmented generation with metrics.
 """
+from evaluation.relevance import RelevanceEvaluator
+from evaluation.faithfulness import FaithfulnessEvaluator
 
 import logging
 import time
@@ -29,7 +31,10 @@ class RAGPipeline:
         self.vector_store = vector_store
         self.embedding_client = embedding_client
         self.llm_client = llm_client
-        self.top_k = top_k
+        self.top_k = top_k 
+
+        self.relevance_evaluator = RelevanceEvaluator(embedding_client)
+        self.faithfulness_evaluator = FaithfulnessEvaluator()
 
     def ingest(self, chunks: List[Chunk]):
         """
@@ -67,6 +72,11 @@ class RAGPipeline:
         prompt = self._build_prompt(question, context)
 
         answer = self.llm_client.generate(prompt)
+        contexts = [doc["text"] for doc in retrieved_docs]
+
+        relevance_score = self.relevance_evaluator.score(answer, contexts)
+        faithfulness_score = self.faithfulness_evaluator.score(answer, contexts)
+
 
         latency = time.time() - start_time
 
@@ -77,6 +87,17 @@ class RAGPipeline:
             "latency_seconds": round(latency, 3),
             "num_retrieved_docs": len(retrieved_docs)
         }
+        result = {
+            "question": question,
+            "answer": answer,
+            "sources": retrieved_docs,
+            "latency_seconds": round(latency, 3),
+            "num_retrieved_docs": len(retrieved_docs),
+            "evaluation": {
+                "relevance": relevance_score,
+                "faithfulness": faithfulness_score
+    }
+}
 
         logger.info(
             f"RAG query completed in {result['latency_seconds']}s "
