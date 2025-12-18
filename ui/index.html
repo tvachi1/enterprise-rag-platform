@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enterprise RAG Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+  <div class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white shadow">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-semibold">Enterprise RAG Platform</h1>
+        <span class="text-sm text-gray-500">Production-Grade AI Search</span>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 max-w-6xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Ingest Panel -->
+      <section class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">📄 Document Ingestion</h2>
+
+        <label class="block text-sm font-medium mb-2">
+          File path (local):
+        </label>
+
+        <input
+          id="filePath"
+          type="text"
+          placeholder="C:/enterprise-rag-platform/sample.txt"
+          class="w-full border rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring"
+        />
+
+        <button
+          onclick="ingestDocument()"
+          class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        >
+          Ingest Document
+        </button>
+
+        <pre id="ingestResult" class="mt-4 text-sm bg-gray-50 p-3 rounded hidden"></pre>
+      </section>
+
+      <!-- Query Panel -->
+      <section class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">🔍 Ask a Question</h2>
+
+        <label class="block text-sm font-medium mb-2">
+          Question:
+        </label>
+
+        <textarea
+          id="question"
+          rows="4"
+          placeholder="What is this document about?"
+          class="w-full border rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring"
+        ></textarea>
+
+        <button
+          onclick="queryRAG()"
+          class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+        >
+          Query RAG System
+        </button>
+
+        <div id="queryResult" class="mt-4 hidden">
+          <h3 class="font-medium mb-2">Answer</h3>
+          <p id="answerText" class="bg-gray-50 p-3 rounded mb-3"></p>
+
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div class="bg-gray-50 p-3 rounded">
+              <strong>Relevance</strong>
+              <div id="relevanceScore"></div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded">
+              <strong>Faithfulness</strong>
+              <div id="faithfulnessScore"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t">
+      <div class="max-w-6xl mx-auto px-6 py-4 text-sm text-gray-500">
+        Built by Varshith · Enterprise RAG Demo
+      </div>
+    </footer>
+  </div>
+
+  <!-- JS Logic -->
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    async function ingestDocument() {
+      const filePath = document.getElementById("filePath").value;
+      const resultBox = document.getElementById("ingestResult");
+
+      resultBox.classList.remove("hidden");
+      resultBox.textContent = "Ingesting...";
+
+      try {
+        const res = await fetch(`${API_BASE}/ingest`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file_path: filePath })
+        });
+
+        const data = await res.json();
+        resultBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        resultBox.textContent = "Error ingesting document";
+      }
+    }
+
+    async function queryRAG() {
+      const question = document.getElementById("question").value;
+
+      try {
+        const res = await fetch(`${API_BASE}/query`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question })
+        });
+
+        const data = await res.json();
+
+        document.getElementById("queryResult").classList.remove("hidden");
+        document.getElementById("answerText").textContent = data.answer;
+        document.getElementById("relevanceScore").textContent = data.evaluation.relevance;
+        document.getElementById("faithfulnessScore").textContent = data.evaluation.faithfulness;
+      } catch (err) {
+        alert("Query failed");
+      }
+    }
+  </script>
+</body>
+</html>

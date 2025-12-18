@@ -109,3 +109,10 @@ def query_rag(request: QueryRequest):
     except Exception as e:
         logger.error(f"Query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+        @app.get("/")
+def root():
+    return {
+        "service": "Enterprise RAG Platform",
+        "status": "running",
+        "docs": "/docs"
+    }
